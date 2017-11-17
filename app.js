@@ -27,7 +27,7 @@ app.get('/new/:urlToShorten(*)', (req, res, next) => {
 
   if (regex.test(urlToShorten) === true) {
     //return 'Works';
-    var short = Math.floor(Math.random() * 1000000). toString();
+    var short = Math.floor(Math.random() * 1000000).toString();
     var data = new shortURL({
       originalURL: urlToShorten,
       shortURL: short
@@ -39,18 +39,38 @@ app.get('/new/:urlToShorten(*)', (req, res, next) => {
       }
     });
 
-    return res.json({
-      data
-    });
+    return res.json(data);
   }
-  return res.json({
-    urlToShorten: 'Failed'
+
+  var data = new shortURL({
+    originalURL: urlToShorten,
+    shortURL: 'InvalidURL'
   });
 
-  // return res.json({
-  //   urlToShorten
-  // });
-  //console.log('Shortenning the URL: ' + urlToShorten);
+  return res.json(data);
+});
+
+//Query database and forward it to original URL if present
+app.get('/:urlToForward', (req, res, next) => {
+
+  var shorterUrl = req.params.urlToForward;
+
+  shortURL.findOne({
+    'shortURL': shorterUrl
+  }, (err, data) => {
+    if (err) {
+      return res.send('Error reading DB');
+    }
+    var isHttp = new RegExp("^(http|https)://", "i");
+
+    var strToCheck = data.originalURL;
+
+    if (isHttp.test(strToCheck)) {
+      res.redirect(301, data.originalURL);
+    } else {
+      res.redirect(301, 'http://' + data.originalURL)
+    }
+  });
 });
 
 //start server and listen on port 3000
